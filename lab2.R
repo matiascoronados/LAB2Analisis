@@ -38,6 +38,7 @@ dd$class <- replace(dd$class,dd$class==4,'Maligno')
 
 #Se aplica factor
 dd[["class"]] <- factor(dd[["class"]])
+data[["class"]] <- factor(data[["class"]])
 data[["bare.nuclei"]] <- factor(data[["bare.nuclei"]])
 
 
@@ -51,11 +52,11 @@ data$id <- NULL
 
 
 #VISTA GENERAL
-ggpairs(data, aes(colour=class, alpha=0.4))
+ggpairs(dd, aes(colour=class, alpha=0.4))
 
 
 #GRAFICO DE CORRELACION
-corrplot.mixed(cor(data),
+corrplot.mixed(cor(dd),
                lower = "number", 
                upper = "circle",
                tl.col = "black")
@@ -67,11 +68,13 @@ library(ggpubr)
 library(FactoMineR)
 library(factoextra)
 
+
 data.sinclass = subset(data, select = -c(class) )
-
-PCA(data.sinclass,scale.unit=TRUE,ncp=5,graph=TRUE)
-
+PCA(data.sinclass[,-1],scale.unit=TRUE,ncp=5,graph=TRUE)
 dist = dist(data.sinclass,method='euclidean')
+
+
+fviz_dist(dist)
 
 
 
@@ -87,8 +90,74 @@ fviz_nbclust(data.sinclass,kmeans,method="gap_stat")
 
 set.seed(999)
 
-km.res = kmeans(data.sinclass,5,nstart=25)
+km.res = kmeans(data.sinclass,3,nstart=25)
 fviz_cluster(km.res,data=data.sinclass,palette="jco",ggtheme=theme_minimal())
+
+classCluster = km.res$cluster
+kaka <- data 
+kaka$classCluster <- classCluster
+
+dd$class <- replace(dd$class,dd$class==2,'Benigno')
+dd$class <- replace(dd$class,dd$class==4,'Maligno')
+
+
+num = 0
+for (i in 1:nrow(kaka)) {
+  class = kaka$class[i]
+  classCluster = kaka$classCluster[i]
+  if(class ==4 && classCluster==1){
+    num = num + 1
+  }
+}
+num
+
+
+######### Cluster K = 3
+# class=2 ; cluster=1
+#[1] 16
+# class=4 ; cluster=1
+#[1] 98
+#######
+# class=2 ; cluster=2
+#[1] 427
+# class=4 ; cluster=2
+#[1] 2
+#######
+# class=2 ; cluster=3
+#[1] 0
+# class=4 ; cluster=3
+#[1] 139
+#######
+
+
+######### Cluster K = 2
+# class=4 ; cluster=1
+#[1] 217
+# class=4 ; cluster!=1
+#[1] 22
+#######
+# class=2 ; cluster=2
+#[1] 434
+# class=2 ; cluster!=2
+#[1] 9
+#######
+
+
+data_frame <- data.frame(class=c(2,4),
+                         cluster=c(16,98))
+
+
+ggplot(data_frame,aes(x="",y=porcentaje, fill=categorias))+
+  geom_bar(stat = "identity",
+           color="white")+
+  geom_text(aes(label=percent(porcentaje/100)),
+            position=position_stack(vjust=0.5),color="white",size=6)+
+  coord_polar(theta = "y")+
+  scale_fill_manual(values=c("salmon","steelblue","orange","gray"))+
+  theme_void()+
+  labs(title="Gráfico de Pie")
+
+
 
 
 #Metodo de daisy
