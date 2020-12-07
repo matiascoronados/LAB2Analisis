@@ -3,10 +3,7 @@ library(tidyverse)
 library(ggplot2)
 library(GGally)
 library(psych)
-library(corrplot)
-#PDF
-#https://www.researchgate.net/publication/311950799_Analysis_of_the_Wisconsin_Breast_Cancer_Dataset_and_Machine_Learning_for_Breast_Cancer_Detection/link/5864757e08ae329d6203aa82/download
-
+library(cluster)
 
 url_datos <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data'
 
@@ -63,148 +60,226 @@ corrplot.mixed(cor(data),
                upper = "circle",
                tl.col = "black")
 
+###########################################################################################
 
-#GRAFICO DE CAJAS
 
 library(ggpubr)
-library(cowplot)
+library(FactoMineR)
+library(factoextra)
 
-boxplot.width =  ggboxplot(data = data, x = "class", y = "width", color = "class") + border()
+data.sinclass = subset(data, select = -c(class) )
 
-#Grafico de cajas para clump.thickness
+PCA(data.sinclass,scale.unit=TRUE,ncp=5,graph=TRUE)
 
-boxplot.clump.thickness =  ggboxplot(data = dd, x = "class", y = "clump.thickness", color = "class") + border()
-ydens = axis_canvas(boxplot.clump.thickness, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.clump.thickness = insert_yaxis_grob(boxplot.clump.thickness, ydens, grid::unit(.2, "null"), position = "right")
+dist = dist(data.sinclass,method='euclidean')
 
-ggdraw(boxplot.clump.thickness)
 
 
-#Grafico de cajas para unif.cell.size
+#Metodo del codo
+fviz_nbclust(data.sinclass,kmeans,method="wss")
 
-boxplot.unif.cell.size =  ggboxplot(data = dd, x = "class", y = "unif.cell.size", color = "class") + border()
-ydens = axis_canvas(boxplot.unif.cell.size, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.unif.cell.size = insert_yaxis_grob(boxplot.unif.cell.size, ydens, grid::unit(.2, "null"), position = "right")
+#Metodo de la silueta
+fviz_nbclust(data.sinclass,kmeans,method="silhouette")
 
-ggdraw(boxplot.unif.cell.size)
+#Metodo de la brecha estadistica
+fviz_nbclust(data.sinclass,kmeans,method="gap_stat")
 
 
-#Grafico de cajas para unif.cell.shape
+set.seed(999)
+
+km.res = kmeans(data.sinclass,5,nstart=25)
+fviz_cluster(km.res,data=data.sinclass,palette="jco",ggtheme=theme_minimal())
+
 
-boxplot.unif.cell.shape =  ggboxplot(data = dd, x = "class", y = "unif.cell.shape", color = "class") + border()
-ydens = axis_canvas(boxplot.unif.cell.shape, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.unif.cell.shape = insert_yaxis_grob(boxplot.unif.cell.shape, ydens, grid::unit(.2, "null"), position = "right")
+#Metodo de daisy
+dis.daisy = daisy(data.sinclass)
+dis.matrix.daisy = as.matrix(dis.daisy)
+ks.daisy = kmeans(dis.matrix.daisy,3)
 
-ggdraw(boxplot.unif.cell.shape)
+fviz_cluster(ks.daisy,data=data.sinclass,palette="jco",ggtheme=theme_minimal())
 
+#VALORES QUE CATALOGO DAISY
+ks.daisy$cluster
 
-#Grafico de cajas para marginal.adhesion
 
-boxplot.marginal.adhesion =  ggboxplot(data = dd, x = "class", y = "marginal.adhesion", color = "class") + border()
-ydens = axis_canvas(boxplot.marginal.adhesion, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.marginal.adhesion = insert_yaxis_grob(boxplot.marginal.adhesion, ydens, grid::unit(.2, "null"), position = "right")
 
-ggdraw(boxplot.marginal.adhesion)
 
-#Grafico de cajas para epith.cell.size
 
-boxplot.epith.cell.size =  ggboxplot(data = dd, x = "class", y = "epith.cell.size", color = "class") + border()
-ydens = axis_canvas(boxplot.epith.cell.size, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.epith.cell.size = insert_yaxis_grob(boxplot.epith.cell.size, ydens, grid::unit(.2, "null"), position = "right")
 
-ggdraw(boxplot.epith.cell.size)
 
+p1 <- ggplot(data = data, aes(x = clump.thickness)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$clump.thickness),
+                            sd = sd(data$clump.thickness))) +
+  ggtitle("Histograma de clump.thickness") +
+  theme_bw()
 
-#Grafico de cajas para bare.nuclei
+p2 <- ggplot(data = data, aes(x = unif.cell.size)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$unif.cell.size),
+                            sd = sd(data$unif.cell.size))) +
+  ggtitle("Histograma de unif.cell.size") +
+  theme_bw()
 
-boxplot.bare.nuclei =  ggboxplot(data = dd, x = "class", y = "bare.nuclei", color = "class") + border()
-ydens = axis_canvas(boxplot.bare.nuclei, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.bare.nuclei = insert_yaxis_grob(boxplot.bare.nuclei, ydens, grid::unit(.2, "null"), position = "right")
+p3 <- ggplot(data = data, aes(x = unif.cell.shape)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$unif.cell.shape),
+                            sd = sd(data$unif.cell.shape))) +
+  ggtitle("Histograma de unif.cell.shape") +
+  theme_bw()
 
-ggdraw(boxplot.bare.nuclei)
+p4 <- ggplot(data = data, aes(x = marg.adhesion)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$marg.adhesion),
+                            sd = sd(data$marg.adhesion))) +
+  ggtitle("Histograma de marg.adhesion") +
+  theme_bw()
 
+p5 <- ggplot(data = data, aes(x = epith.cell.size)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$epith.cell.size),
+                            sd = sd(data$epith.cell.size))) +
+  ggtitle("Histograma de epith.cell.size") +
+  theme_bw()
 
-#Grafico de cajas para bland.chromatin
+p6 <- ggplot(data = data, aes(x = bare.nuclei)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$bare.nuclei),
+                            sd = sd(data$bare.nuclei))) +
+  ggtitle("Histograma de bare.nuclei") +
+  theme_bw()
 
-boxplot.bland.chromatin =  ggboxplot(data = dd, x = "class", y = "bland.chromatin", color = "class") + border()
-ydens = axis_canvas(boxplot.bland.chromatin, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.bland.chromatin = insert_yaxis_grob(boxplot.bland.chromatin, ydens, grid::unit(.2, "null"), position = "right")
-
-ggdraw(boxplot.bland.chromatin)
-
-
-#Grafico de cajas para normal.nucleoli
-
-boxplot.normal.nucleoli =  ggboxplot(data = dd, x = "class", y = "normal.nucleoli", color = "class") + border()
-ydens = axis_canvas(boxplot.normal.nucleoli, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.normal.nucleoli = insert_yaxis_grob(boxplot.normal.nucleoli, ydens, grid::unit(.2, "null"), position = "right")
-
-ggdraw(boxplot.normal.nucleoli)
-
-#Grafico de cajas para mitoses
-
-boxplot.mitoses =  ggboxplot(data = dd, x = "class", y = "mitoses", color = "class") + border()
-ydens = axis_canvas(boxplot.mitoses, axis = "y", coord_flip = TRUE) + geom_density(data = dd, aes(x = clump.thickness, fill = class), alpha = 0.7, size = 0.2) + coord_flip()
-boxplot.mitoses = insert_yaxis_grob(boxplot.mitoses, ydens, grid::unit(.2, "null"), position = "right")
-
-ggdraw(boxplot.mitoses)
-
-
-data.aux <- data
-
-data$class <- replace(data$class,data$class==2,0)
-data$class <- replace(data$class,data$class==4,1)
-
-data$class <- factor(data$class)
-
-
-
-total <- glm(class ~ ., family = binomial(link = "logit"), data = data)
-
-
-nulo <- glm(
-   class ~ 1,
-   family = binomial(link = "logit"),
-   data = data
-)
-
-modelo <- step(nulo, scope = list(lower = nulo, upper = total),
-               direction = "forward", test = "LRT", trace = 1)
-
-
-#Para analizar 
-
-#El modelo creado con step, entrego el singuiente RLM
-
-#class ~ unif.cell.size + clump.thickness + bland.chroma + 
-#marg.adhesion + unif.cell.shape + norm.nucleoli + bare.nuclei + 
-#  mitoses
-
-#Este es similar al modelo completo, con la diferencia de que este ultimo contempla la variable epith.cell.size
-
-#Para este tipo de modelo, es importante reconocer si las variables guaran una correlacion entre ellas.
-
-#Debido al conocimiento previo que se tiene del tema, se sabe que la variable single epith cell size guarnda una 
-#estrecha relacion con marginal adhesion.
-#Ademas de lo anterior, se sabe que existe una relacion entre la forma, y tamaño de la celula.
-
-#Por loa p
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+p7 <- ggplot(data = data, aes(x = bland.chroma)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$bland.chroma),
+                            sd = sd(data$bland.chroma))) +
+  ggtitle("Histograma de bland.chroma") +
+  theme_bw()
+
+p8 <- ggplot(data = data, aes(x = norm.nucleoli)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$norm.nucleoli),
+                            sd = sd(data$norm.nucleoli))) +
+  ggtitle("Histograma de norm.nucleoli") +
+  theme_bw()
+
+p9 <- ggplot(data = data, aes(x = mitoses)) +
+  geom_histogram(aes(y = ..density.., fill = ..count..),bins=10) +
+  scale_fill_gradient(low = "#DCDCDC", high = "#7C7C7C") +
+  stat_function(fun = dnorm, colour = "firebrick",
+                args = list(mean = mean(data$mitoses),
+                            sd = sd(data$mitoses))) +
+  ggtitle("Histograma de mitoses") +
+  theme_bw()
+
+multiplot(p1, p2, p3, p4,p5,p6,p7,p8,p9, cols=3)
+
+
+
+
+
+
+
+
+
+
+#Pruebas de normalidad: https://rpubs.com/MSiguenas/122473
+
+#install.packages('moments')
+library(normtest)
+library(nortest)
+library(moments)
+
+
+#Anderson-Darling normality test
+for (i in names(data)) {
+  print(ad.test(data[[i]]))
+}
+
+###Prueba de Pearson chi-square###
+for (i in names(data)) {
+  print(pearson.test(data[[i]]))
+}
+
+###Prueba de Shapiro-Francia###
+for (i in names(data)) {
+  print(sf.test(data[[i]]))
+}
+
+###Prueba de Jarque Bera###
+for (i in names(data)) {
+  print(jb.norm.test(data[[i]]))
+}
+
+###Prueba de Shapiro-Wilk###
+for (i in names(data)) {
+  print(shapiro.test(data[[i]]))
+}1
+
+
+#FUNCION DE INTERNET, HAY QUE ANEXARLA
+
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
 
 
 
