@@ -90,7 +90,7 @@ fviz_nbclust(data.sinclass,kmeans,method="gap_stat")
 
 set.seed(999)
 
-km.res = kmeans(data.sinclass,3,nstart=25)
+km.res = kmeans(data.sinclass,4,nstart=25)
 fviz_cluster(km.res,data=data.sinclass,palette="jco",ggtheme=theme_minimal())
 
 classCluster = km.res$cluster
@@ -135,6 +135,7 @@ num
 #[1] 217
 # class=4 ; cluster!=1
 #[1] 22
+
 #######
 # class=2 ; cluster=2
 #[1] 434
@@ -142,21 +143,33 @@ num
 #[1] 9
 #######
 
+#Para k = 2
+df<-data.frame(categorias=c("Cluster: 1 // class: Malignos","Cluster: 2 // class.: Malignos","Cluster: 2 // class: Benignos","Cluster: 1 // class: Benignos"),
+               porcentaje=c(31.84,3.22,63.63,1.31))
 
-data_frame <- data.frame(class=c(2,4),
-                         cluster=c(16,98))
+ggplot(df,aes(x="",y=porcentaje, fill=categorias))+
+    geom_bar(stat = "identity",
+             color="white")+
+    geom_text(aes(label=percent(porcentaje/100)),
+              position=position_stack(vjust=0.5),color="white",size=6)+
+    coord_polar(theta = "y")+
+    scale_fill_manual(values=c("salmon","orange","steelblue","gray"))+
+    theme_void()+
+    labs(title="Distribucion de la las coincidencias de class vs cluster con k = 2")
 
+#Para k = 3
+df1<-data.frame(categorias=c("Cluster: 1 // class: Benignos","Cluster: 1 // class.: Malignos","Cluster: 2 // class: Benignos","Cluster: 2 // class: Malignos",".Cluster: 3 // class: Benignos",".Cluster: 3 // class: Malignos"),
+               porcentaje=c(2.346,14.369,62.609,0.296,0,20.38))
 
-ggplot(data_frame,aes(x="",y=porcentaje, fill=categorias))+
-  geom_bar(stat = "identity",
-           color="white")+
-  geom_text(aes(label=percent(porcentaje/100)),
-            position=position_stack(vjust=0.5),color="white",size=6)+
-  coord_polar(theta = "y")+
-  scale_fill_manual(values=c("salmon","steelblue","orange","gray"))+
-  theme_void()+
-  labs(title="Gráfico de Pie")
-
+ggplot(df1,aes(x="",y=porcentaje, fill=categorias))+
+    geom_bar(stat = "identity",
+             color="white")+
+    geom_text(aes(label=percent(porcentaje/100)),
+              position=position_stack(vjust=0.5),color="white",size=6)+
+    coord_polar(theta = "y")+
+    scale_fill_manual(values=c("salmon","orange","steelblue","maroon1", "brown2", "darkcyan"))+
+    theme_void()+
+    labs(title="Distribucion de la las coincidencias de class vs cluster con k = 3")
 
 
 
